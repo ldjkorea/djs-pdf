@@ -28,11 +28,15 @@
             justify-content: space-between; align-items: center; border-bottom: 1px solid #333; z-index: 10;
         }
         #canvas-wrapper {
-            flex: 1; overflow: auto; display: flex; justify-content: center; align-items: flex-start;
+            flex: 1; 
+            overflow: auto; /* 스크롤 허용 */
+            display: flex; 
+            /* justify-content: center; */ /* 👈 해결 완료: 중앙 정렬을 주석 처리하여 왼쪽 상단에 고정 */
+            align-items: flex-start; /* 세로는 상단 고정 유지 */
             touch-action: pan-x pan-y; /* 스와이프 스크롤 허용 */
         }
         #pdf-canvas { 
-            transform-origin: top left;
+            transform-origin: top left; /* 확대 기준점을 왼쪽 상단으로 고정 */
         }
         .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
                     display: flex; gap: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 20px; z-index: 10;}
@@ -71,7 +75,7 @@
     let pdfDoc = null, pageNum = 1, scale = 1.0, canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d');
     const canvasWrapper = document.getElementById('canvas-wrapper');
 
-    // 파일 선택 로직 (가장 안정적인 방식)
+    // 파일 선택 로직
     document.getElementById('file-input').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file && file.type === "application/pdf") {
@@ -89,9 +93,10 @@
         document.getElementById('welcome').style.display = 'none';
         document.getElementById('viewer-container').style.display = 'flex';
         
-        // 모바일 화면에 맞게 초기 배율 최적화
+        // 초기 배율: 화면 가로폭에 맞춤
         scale = window.innerWidth / 800; 
         if(scale < 0.6) scale = 0.6;
+        if(scale > 1.5) scale = 1.5; // PC 등 너무 큰 화면 방지
         renderPage(pageNum);
     }
 
@@ -112,7 +117,7 @@
     document.getElementById('zoom-in').addEventListener('click', () => { scale += 0.2; renderPage(pageNum); });
     document.getElementById('zoom-out').addEventListener('click', () => { if (scale <= 0.5) return; scale -= 0.2; renderPage(pageNum); });
 
-    // --- 핀치 줌 (두 손가락 확대/축소) 로직 추가 ---
+    // --- 핀치 줌 (두 손가락 확대/축소) 로직 ---
     let initialDistance = 0;
     let currentVisualScale = 1;
 
@@ -134,18 +139,18 @@
                 e.touches[0].pageY - e.touches[1].pageY
             );
             currentVisualScale = currentDistance / initialDistance;
-            // 움직이는 동안에는 화면만 임시로 확대/축소
+            // 움직이는 동안 시각적 효과
             canvas.style.transform = `scale(${currentVisualScale})`;
         }
     }, {passive: false});
 
     canvasWrapper.addEventListener('touchend', (e) => {
         if (initialDistance > 0 && e.touches.length < 2) {
-            // 손가락을 떼면 실제 배율을 변경하고 고화질로 새로고침
+            // 실제 배율 반영 및 고화질 랜더링
             scale *= currentVisualScale;
             
-            if (scale < 0.5) scale = 0.5;
-            if (scale > 4.0) scale = 4.0;
+            if (scale < 0.3) scale = 0.3; // 최소 배율 축소
+            if (scale > 4.0) scale = 4.0; // 최대 배율 제한
 
             canvas.style.transform = 'none'; 
             initialDistance = 0;

@@ -38,6 +38,7 @@
             touch-action: pan-x pan-y; 
         }
         #pdf-canvas { 
+            /* 확대 기준점은 아래 스크립트에서 손가락 위치에 따라 동적으로 변합니다 */
             transform-origin: top left; 
         }
     </style>
@@ -88,7 +89,9 @@
         scale = window.innerWidth / 800; 
         if(scale < 0.6) scale = 0.6;
         if(scale > 1.5) scale = 1.5; 
-        renderPage(pageNum);
+        await renderPage(pageNum);
+        canvasWrapper.scrollTop = 0;
+        canvasWrapper.scrollLeft = 0;
     }
 
     async function renderPage(num) {
@@ -100,13 +103,9 @@
         const renderContext = { canvasContext: ctx, viewport: viewport };
         await page.render(renderContext).promise;
         document.getElementById('page-info').textContent = `${num} / ${pdfDoc.numPages}`;
-        
-        // 페이지 렌더링 후 스크롤을 맨 위 좌측으로 초기화
-        canvasWrapper.scrollTop = 0;
-        canvasWrapper.scrollLeft = 0;
     }
 
-    // --- 핀치 줌 로직 ---
+    // --- 핀치 줌 로직 (손가락 중심점 계산 및 스크롤 보정 추가) ---
     let initialDistance = 0;
     let currentVisualScale = 1;
 
@@ -117,6 +116,15 @@
                 e.touches[0].pageX - e.touches[1].pageX,
                 e.touches[0].pageY - e.touches[1].pageY
             );
+
+            // 두 손가락의 정중앙 좌표를 계산하여 확대 기준점으로 설정
+            const rect = canvas.getBoundingClientRect();
+            const clientX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const clientY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            const originX = clientX - rect.left;
+            const originY = clientY - rect.top;
+
+            canvas.style.transformOrigin = `${originX}px ${originY}px`;
         }
     }, {passive: false});
 
@@ -132,15 +140,28 @@
         }
     }, {passive: false});
 
-    canvasWrapper.addEventListener('touchend', (e) => {
+    canvasWrapper.addEventListener('touchend', async (e) => {
         if (initialDistance > 0 && e.touches.length < 2) {
+            const scaleRatio = currentVisualScale;
             scale *= currentVisualScale;
             if (scale < 0.3) scale = 0.3; 
             if (scale > 4.0) scale = 4.0; 
+
             canvas.style.transform = 'none'; 
+
+            // 렌더링 전 화면 중심점 기억 (화면이 튀는 현상 방지)
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+            const centerX = canvasWrapper.scrollLeft + wrapperRect.width / 2;
+            const centerY = canvasWrapper.scrollTop + wrapperRect.height / 2;
+
             initialDistance = 0;
             currentVisualScale = 1;
-            renderPage(pageNum); 
+
+            await renderPage(pageNum); 
+
+            // 화면 중심점도 확대 배율만큼 이동시켜 부드러운 스크롤 유지
+            canvasWrapper.scrollLeft = (centerX * scaleRatio) - (wrapperRect.width / 2);
+            canvasWrapper.scrollTop = (centerY * scaleRatio) - (wrapperRect.height / 2);
         }
     });
 
@@ -161,24 +182,27 @@
         }
     }, {passive: true});
 
-    function handleSwipe() {
-        // 문서가 확대되어 좌우로 움직일 수 있는(패닝) 상태라면 스와이프 넘기기 방지
+    async function handleSwipe() {
         if (canvasWrapper.scrollWidth > canvasWrapper.clientWidth + 1) return;
 
-        const swipeThreshold = 60; // 60px 이상 밀어야 작동
+        const swipeThreshold = 60; 
         const diff = touchStartX - touchEndX;
 
         if (diff > swipeThreshold) {
-            // 왼쪽으로 스와이프 (다음 페이지)
             if (pageNum < pdfDoc.numPages) {
                 pageNum++;
-                renderPage(pageNum);
+                await renderPage(pageNum);
+                // 페이지를 넘길 때만 스크롤을 맨 위 좌측으로 보냄
+                canvasWrapper.scrollTop = 0;
+                canvasWrapper.scrollLeft = 0;
             }
         } else if (diff < -swipeThreshold) {
-            // 오른쪽으로 스와이프 (이전 페이지)
             if (pageNum > 1) {
                 pageNum--;
-                renderPage(pageNum);
+                await renderPage(pageNum);
+                // 페이지를 넘길 때만 스크롤을 맨 위 좌측으로 보냄
+                canvasWrapper.scrollTop = 0;
+                canvasWrapper.scrollLeft = 0;
             }
         }
     }

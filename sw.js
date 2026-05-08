@@ -1,9 +1,8 @@
-const CACHE_NAME = 'djs-pdf-v3'; // 버전 변경 필수
+const CACHE_NAME = 'djs-pdf-v4';
 const urlsToCache = [
   '/djs-pdf/',
   '/djs-pdf/index.html',
-  '/djs-pdf/manifest.json',
-  '/djs-pdf/icon.png'
+  '/djs-pdf/manifest.json'
 ];
 
 self.addEventListener('install', event => {

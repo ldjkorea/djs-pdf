@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DJ'S PDF</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/djs-pdf/manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         :root { --main-bg: #1a1a1a; --accent: #d4af37; --text: #ffffff; }
@@ -162,9 +162,10 @@
     // PWA 서비스 워커 등록
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
-        });
-    }
+            navigator.serviceWorker.register('/djs-pdf/sw.js')
+            .catch(err => console.log('SW registration failed:', err));
+    });
+}
 </script>
 </body>
 </html>

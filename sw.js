@@ -1,18 +1,35 @@
-const CACHE_NAME = 'djs-pdf-v4';
-const urlsToCache = [
-  '/djs-pdf/',
-  '/djs-pdf/index.html',
-  '/djs-pdf/manifest.json'
+const CACHE = 'pdf-reader-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './pdf.min.js',
+  './pdf.worker.min.js',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(hit =>
+      hit || fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      }).catch(() => hit)
+    )
   );
 });

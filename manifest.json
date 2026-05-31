@@ -1,21 +1,14 @@
 {
-  "name": "DJ'S PDF",
-  "short_name": "DJ PDF",
-  "start_url": "/djs-pdf/index.html",
-  "scope": "/djs-pdf/",
+  "name": "PDF 리더",
+  "short_name": "PDF 리더",
+  "description": "광고 없는 가벼운 PDF 뷰어",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#d4af37",
+  "background_color": "#1c1a17",
+  "theme_color": "#1c1a17",
+  "orientation": "any",
   "icons": [
-    {
-      "src": "/djs-pdf/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/djs-pdf/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
